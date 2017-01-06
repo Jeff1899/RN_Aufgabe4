@@ -49,6 +49,8 @@ public class Client {
         }
         echoServerIP = (Inet6Address) InetAddress.getByName(parameters[2]);
         nextHopIp = (Inet6Address) InetAddress.getByName(parameters[4]);
+        System.out.println(echoServerIP);
+        System.out.println(nextHopIp);
         nextHopPort = Integer.parseInt(parameters[5]);
         hopLimit = Integer.parseInt(parameters[6]);
 

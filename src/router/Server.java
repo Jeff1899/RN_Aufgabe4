@@ -24,6 +24,7 @@ public class Server {
     public void serve() {
         while (true) {
             try {
+            	System.out.println("SERVER WAIT");
                 IpPacket ipPacket = networkLayer.getPacket();
                 System.out.println("Received packet from " 
                         + ipPacket.getNextHopIp().getHostAddress() + "/" + ipPacket.getNextHopPort());
