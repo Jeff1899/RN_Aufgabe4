@@ -1,6 +1,12 @@
-package router;
+package hawRouter;
 
 import com.googlecode.ipv6.IPv6Address;
+
+import router.ControlPacket;
+import router.IpPacket;
+import router.NetworkLayer;
+import router.ControlPacket.Type;
+import router.IpPacket.Header;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -12,7 +18,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Router {
+public class Router implements Runnable {
 
     private NetworkLayer networkLayer;
     private Inet6Address ownRouterAddress;
@@ -42,6 +48,12 @@ public class Router {
             e.printStackTrace();
         }
         System.out.println(routingTableFilepath + " Listening on port " + port + " with local adress" + ownRouterAddress + "");
+//        try {
+//			sendAndReceiveMessage();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
     }
 
     private List<Routing> parseRoutingList(String filepath) {
@@ -68,9 +80,10 @@ public class Router {
     }
 
     public void sendAndReceiveMessage() throws IOException {
-
+    	
         while (running) {
-            IpPacket receivedIpPackage = receiveMessage();
+        	System.out.println("RECEIVE");
+        	IpPacket receivedIpPackage = receiveMessage();
             System.out.println("received Message " + receivedIpPackage);
 
             if(!reachableRoute(receivedIpPackage)){
@@ -90,6 +103,9 @@ public class Router {
     }
 
     private void sendPackageNormally(IpPacket packageToSend, Routing routing) throws IOException {
+    	System.out.println("SEND MESSAGE");
+    	System.out.println(routing.getHopPort());
+    	System.out.println(routing.getHopAddress());
         packageToSend.setHopLimit(packageToSend.getHopLimit() - 1);
         packageToSend.setNextHopIp(routing.getHopAddress());
         packageToSend.setNextPort(routing.getHopPort());
@@ -143,25 +159,31 @@ public class Router {
         return networkLayer.getPacket();
     }
 
+	@Override
+	public void run() {
 
-    public static void main(String[] args) {
-      if(args.length != 1){
-        System.out.println("Usage: Router <Path>");
-        System.out.println("Path: Path of the Configuration Data");
-        return;
-      }
-        int networkLayerPort = Integer.parseInt(args[0]);
-        String listFilePath = args[1];
-        String routerAddress = args[2];
-        Router router = new Router(networkLayerPort, listFilePath, routerAddress);
-
-        try {
-            router.sendAndReceiveMessage();
-        } catch (IOException e) {
-            e.printStackTrace();
+        while (running) {
+        	try {
+	        	IpPacket receivedIpPackage;
+				receivedIpPackage = receiveMessage();
+	            System.out.println("received Message " + receivedIpPackage);
+	
+	            if(!reachableRoute(receivedIpPackage)){
+	                sendErrorReturnPackage(receivedIpPackage, ControlPacket.Type.DestinationUnreachable);
+	            } else {
+	                Inet6Address destinationAddress = receivedIpPackage.getDestinationAddress();
+	                Routing bestMatch = findBestMatch(destinationAddress);
+	
+	                if (receivedIpPackage.getHopLimit() > 1) {
+	                    sendPackageNormally(receivedIpPackage, bestMatch);
+	                } else {
+	                    sendErrorReturnPackage(receivedIpPackage, ControlPacket.Type.TimeExceeded);
+	                }
+	            }
+        	}
+        	catch (IOException e) {
+        		e.printStackTrace();
+			 }
         }
-    }
-
+	} 	
 }
-  
-  
