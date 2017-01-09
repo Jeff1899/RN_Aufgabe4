@@ -1,10 +1,16 @@
-package hawRouter;
+package utility;
 
 import com.googlecode.ipv6.IPv6Address;
 import com.googlecode.ipv6.IPv6Network;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 public class Routing {
 
@@ -22,6 +28,22 @@ public class Routing {
         this.hopPort = hopPort;
         this.destinationNetwork = IPv6Network.fromString(destinationAddress + "/" + destinationAddressNetMask);
     }
+    
+	public static ArrayList<Routing> createRoutingTable(File accounts){
+		   ArrayList<Routing> routeTable = new ArrayList<Routing>();
+	        try {
+	            BufferedReader rdr = new BufferedReader(new FileReader(accounts));
+	            String input = "";
+	            while ((input = rdr.readLine()) != null) {
+	                String[] routeEntry = input.split(";");
+	                String target[] = routeEntry[0].split("/");
+	                routeTable.add(new Routing(target[0], target[1], routeEntry[1], Integer.parseInt(routeEntry[2])));
+	            }
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
+	        return routeTable;
+	}
 
     public Inet6Address getDestinationAddress() {
         return destinationAddress;
