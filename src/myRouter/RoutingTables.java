@@ -5,18 +5,21 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 
 public class RoutingTables {
 
-		private String target;
-		private String nextHop;
+		private Inet6Address  target;
+		private Inet6Address  nextHop;
 		private int port;
 		
-		public RoutingTables(String target, String nextHop, int port){
-			this.target = target;
-			this.nextHop = nextHop;
+		public RoutingTables(String target, String nextHop, int port) throws UnknownHostException{
+			this.target = (Inet6Address) InetAddress.getByName(target);
+			this.nextHop = (Inet6Address) InetAddress.getByName(nextHop);
 			this.port = port;
 		}
 		
@@ -26,26 +29,16 @@ public class RoutingTables {
 			
 		}
 		
-		public static ArrayList<RoutingTables> createRoutingTable(File file){
-			   ArrayList<RoutingTables> routingList = new ArrayList<RoutingTables>();
-		        try {
-		            BufferedReader rdr = new BufferedReader(new FileReader(file));
-		            String input = "";
-		            while ((input = rdr.readLine()) != null) {
-		                String[] userdata = input.split(";");		                
-		                routingList.add(new RoutingTables(userdata[0], userdata[1], Integer.parseInt(userdata[2])));
-		            }
-		        } catch (IOException e) {
-		            e.printStackTrace();
-		        }
-		        return routingList;
+		public RoutingTables longestPrefixMatch(){
+		  //für die weiterleitung in andere Router.
+		  return null;
 		}
 
-		public String getTarget() {
+		public Inet6Address getTarget() {
 			return target;
 		}
 
-		public String getNextHop() {
+		public Inet6Address getNextHop() {
 			return nextHop;
 		}
 
