@@ -1,21 +1,18 @@
 package hawRouter;
 
-import com.googlecode.ipv6.IPv6Address;
 
 import router.ControlPacket;
 import router.IpPacket;
 import router.NetworkLayer;
 import utility.Routing;
 
-import java.io.BufferedReader;
+
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class Router implements Runnable {
@@ -32,7 +29,6 @@ public class Router implements Runnable {
             networkLayer = new NetworkLayer(port);
         } catch (SocketException e) {
             e.printStackTrace();
-            System.out.println("ERROR: Initialisierung des NetworkLayer fehlgeschlagen!");
         }
         this.routerName = name;
         this.routingList = Routing.createRoutingTable(new File(routingTableFilepath));
@@ -42,7 +38,7 @@ public class Router implements Runnable {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        System.out.println(routingTableFilepath + " Listening on port " + port + " with local adress" + routerAddr + "");    }
+    }
 
     private void sendPackageNormally(IpPacket packageToSend, Routing routing) throws IOException {
         packageToSend.setHopLimit(packageToSend.getHopLimit() - 1);
@@ -71,11 +67,11 @@ public class Router implements Runnable {
                 || packageToCheck.getSourceAddress() == null;
     }
 
-    private boolean reachableRoute(IpPacket ipp) {
+    private boolean isRouteAvailable(IpPacket ipp) {
         for (Routing r : routingList) {
-            if (r.getDestinationNetwork().contains(IPv6Address.fromInetAddress(ipp.getDestinationAddress()))) {
-                return true;
-            }
+        	if(r.getDestinationAddress().toString().equals(ipp.getDestinationAddress().toString())){
+        		 return true;
+        	}
         }
         return false;
     }
@@ -105,7 +101,7 @@ public class Router implements Runnable {
 	        	IpPacket receivedIpPackage;
 				receivedIpPackage = receiveMessage();
 	            System.out.println( routerName + " empfängt Packet " + receivedIpPackage);
-	            if(!reachableRoute(receivedIpPackage)){
+	            if(!isRouteAvailable(receivedIpPackage)){
 	                sendErrorReturnPackage(receivedIpPackage, ControlPacket.Type.DestinationUnreachable);
 	            } else {
 	                Inet6Address destinationAddress = receivedIpPackage.getDestinationAddress();

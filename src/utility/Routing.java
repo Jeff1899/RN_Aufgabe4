@@ -1,8 +1,5 @@
 package utility;
 
-import com.googlecode.ipv6.IPv6Address;
-import com.googlecode.ipv6.IPv6Network;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -15,18 +12,13 @@ import java.util.ArrayList;
 public class Routing {
 
     private Inet6Address destinationAddress;
-    private IPv6Network destinationNetwork;
     private Inet6Address hopAdress;
     private int hopPort;
     
-
-
-
     public Routing(String destinationAddress, String destinationAddressNetMask, String hopAdress, int hopPort) {
         this.destinationAddress = stringToIPv6(destinationAddress);
         this.hopAdress = stringToIPv6(hopAdress);
         this.hopPort = hopPort;
-        this.destinationNetwork = IPv6Network.fromString(destinationAddress + "/" + destinationAddressNetMask);
     }
     
 	public static ArrayList<Routing> createRoutingTable(File accounts){
@@ -45,28 +37,19 @@ public class Routing {
 	        return routeTable;
 	}
 
-    public Inet6Address getDestinationAddress() {
-        return destinationAddress;
-    }
-
-    public Inet6Address getHopAddress() {
-        return hopAdress;
-    }
-
-
-    public int getHopPort() {
-        return hopPort;
-    }
 
     public int getMatchScore(Inet6Address destination) {
-        if(destinationNetwork.contains(IPv6Address.fromInetAddress(destination))) {
-            String destBinary = ipv6ToBinaryString(getDestinationAddress());
-            String compBinary = ipv6ToBinaryString(destination);
-            return compareBits(compBinary, destBinary);
-        } else {
-            return 0;
+        String target = changeToBinary(destinationAddress);
+        String compare = changeToBinary(destination);
+        int cnt = 0;
+        for(int i = 0; i < target.length() && i < compare.length(); i ++){
+        	if(target.indexOf(i) == compare.indexOf(i)){
+        		cnt = cnt +1;
+        	}else{
+        		break;
+        	}
         }
-
+    	return cnt;
     }
 
     private Inet6Address stringToIPv6 (String address) {
@@ -78,30 +61,26 @@ public class Routing {
         }
         return nextHopAddress;
     }
-
-
-    private String ipv6ToBinaryString(Inet6Address ipv6ad) {
-        IPv6Address address = IPv6Address.fromInetAddress(ipv6ad);
-        String longString = address.toLongString().replace(":","");
-        String s = "";
-        for(int i = 0; i < longString.length(); i++) {
-            char c = longString.toCharArray()[i];
-            s += String.format("%4s", Integer.toBinaryString(c)).replace(" ", "0");
+    
+    private String changeToBinary(Inet6Address ipv6ad) {
+    	char charArray[] = ipv6ad.getHostAddress().replace(":","").toCharArray();
+        String result = "";
+        for(int i = 0; i < charArray.length; i++) {
+            result += String.format("%4s", Integer.toBinaryString(charArray[i])).replace(" ", "0");
         }
-        return s;
+        return result;
     }
 
-    private Integer compareBits(String a, String b) {
-        int count = 0;
-        for (int i = 0; (i < Math.min(a.length(), b.length())) &&  i < destinationNetwork.getNetmask().asPrefixLength(); i++) {
-            if (!(a.indexOf(i) == b.indexOf(i))) return count;
-            count++;
-        }
-        return count;
+    public Inet6Address getDestinationAddress() {
+        return destinationAddress;
     }
 
-    public IPv6Network getDestinationNetwork() {
-        return destinationNetwork;
+    public Inet6Address getHopAddress() {
+        return hopAdress;
+    }
+
+    public int getHopPort() {
+        return hopPort;
     }
 
 
