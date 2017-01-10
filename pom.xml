@@ -17,12 +17,5 @@
     </plugins>
   </build>
   <!-- https://mvnrepository.com/artifact/com.googlecode.java-ipv6/java-ipv6 -->
-  <dependencies>
-  	<dependency>
-	    <groupId>com.googlecode.java-ipv6</groupId>
-	    <artifactId>java-ipv6</artifactId>
-	    <version>0.15</version>
-	</dependency>
-  </dependencies>
   
 </project>

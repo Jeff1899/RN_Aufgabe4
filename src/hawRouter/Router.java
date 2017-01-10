@@ -4,6 +4,7 @@ package hawRouter;
 import router.ControlPacket;
 import router.IpPacket;
 import router.NetworkLayer;
+import utility.LongPrefixMatch;
 import utility.Routing;
 
 
@@ -15,14 +16,25 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.List;
 
+/**
+ * 
+ * @author Jeff & Biraj
+ *
+ */
 public class Router implements Runnable {
 
     private NetworkLayer networkLayer;
     private String routerName;
-    private Inet6Address routerAddr;
     private List<Routing> routingList;
     private boolean running = true;
 
+    /**
+     * Initialisiert den Router
+     * @param port
+     * @param name
+     * @param routingTableFilepath
+     * @param routerAddress
+     */
     public Router(int port,String name, String routingTableFilepath, String routerAddress) {
 
         try {
@@ -32,26 +44,33 @@ public class Router implements Runnable {
         }
         this.routerName = name;
         this.routingList = Routing.createRoutingTable(new File(routingTableFilepath));
-
-        try {
-            this.routerAddr = (Inet6Address) InetAddress.getByName(routerAddress);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
     }
 
-    private void sendPackageNormally(IpPacket packageToSend, Routing routing) throws IOException {
-        packageToSend.setHopLimit(packageToSend.getHopLimit() - 1);
-        packageToSend.setNextHopIp(routing.getHopAddress());
-        packageToSend.setNextPort(routing.getHopPort());
-        networkLayer.sendPacket(packageToSend);
+    /**
+     * Leitet das Packet zum nächsten Hop und dekrimiert HopLimit
+     * 
+     * @param sendPackage
+     * @param tableEntry
+     * @throws IOException
+     */
+    private void sendPackage(IpPacket sendPackage, Routing tableEntry) throws IOException {
+        sendPackage.setHopLimit(sendPackage.getHopLimit() - 1);
+        sendPackage.setNextHopIp(tableEntry.getHopAddress());
+        sendPackage.setNextPort(tableEntry.getHopPort());
+        networkLayer.sendPacket(sendPackage);
     }
 
+    /**
+     * 
+     * @param receivedIpPackage
+     * @param type
+     * @throws IOException
+     */
     private void sendErrorReturnPackage(IpPacket receivedIpPackage, ControlPacket.Type type) throws IOException {
         System.out.println("Sending Error return Package of type " + type);
 
         if(!isControllOrInvalidSourcePackage(receivedIpPackage)) {
-            Routing bestMatch = findBestMatch(receivedIpPackage.getSourceAddress());
+        	Routing bestMatch = LongPrefixMatch.getLongPrefixMatch(receivedIpPackage.getDestinationAddress(), routingList);
             receivedIpPackage.setDestinationAddress(receivedIpPackage.getSourceAddress());
             receivedIpPackage.setNextHopIp(bestMatch.getHopAddress());
             receivedIpPackage.setNextPort(bestMatch.getHopPort());
@@ -62,53 +81,47 @@ public class Router implements Runnable {
         }
     }
 
+    /**
+     * 
+     * @param packageToCheck
+     * @return
+     */
     private boolean isControllOrInvalidSourcePackage(IpPacket packageToCheck) {
         return packageToCheck.getType() == IpPacket.Header.Control
                 || packageToCheck.getSourceAddress() == null;
     }
 
-    private boolean isRouteAvailable(IpPacket ipp) {
-        for (Routing r : routingList) {
-        	if(r.getDestinationAddress().toString().equals(ipp.getDestinationAddress().toString())){
+    /**
+     * 
+     * @param ipp
+     * @return
+     */
+    private boolean isRouteAvailable(Inet6Address destination) {
+        for (Routing route : routingList) {
+        	if(route.getDestinationAddress().toString().equals(destination.toString())){
         		 return true;
         	}
         }
         return false;
     }
 
-    public Routing findBestMatch(Inet6Address destinationAddress) {
-        Routing bestMatch = null;
-        long bestMatchValue = Integer.MIN_VALUE;
-        for (Routing route : routingList) {
-            long tmp = route.getMatchScore(destinationAddress);
-            if (tmp > bestMatchValue) {
-                bestMatchValue = tmp;
-                bestMatch = route;
-            }
-        }
-        return bestMatch;
-    }
-
-    private IpPacket receiveMessage() throws IOException {
-        return networkLayer.getPacket();
-    }
-
+    /**
+     * 
+     */
 	@Override
 	public void run() {
 
         while (running) {
         	try {
-	        	IpPacket receivedIpPackage;
-				receivedIpPackage = receiveMessage();
+	        	IpPacket receivedIpPackage = networkLayer.getPacket();
 	            System.out.println( routerName + " empfängt Packet " + receivedIpPackage);
-	            if(!isRouteAvailable(receivedIpPackage)){
+	            if(!isRouteAvailable(receivedIpPackage.getDestinationAddress())){
 	                sendErrorReturnPackage(receivedIpPackage, ControlPacket.Type.DestinationUnreachable);
 	            } else {
-	                Inet6Address destinationAddress = receivedIpPackage.getDestinationAddress();
-	                Routing bestMatch = findBestMatch(destinationAddress);
-	
 	                if (receivedIpPackage.getHopLimit() > 1) {
-	                    sendPackageNormally(receivedIpPackage, bestMatch);
+	                	
+	                	
+	                	sendPackage(receivedIpPackage, LongPrefixMatch.getLongPrefixMatch(receivedIpPackage.getDestinationAddress(), routingList));
 	                } else {
 	                    sendErrorReturnPackage(receivedIpPackage, ControlPacket.Type.TimeExceeded);
 	                }

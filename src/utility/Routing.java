@@ -9,18 +9,35 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
+/**
+ * 
+ * @author Jeff & Biraj
+ *
+ */
 public class Routing {
 
     private Inet6Address destinationAddress;
     private Inet6Address hopAdress;
     private int hopPort;
     
+    /**
+     * 
+     * @param destinationAddress
+     * @param destinationAddressNetMask
+     * @param hopAdress
+     * @param hopPort
+     */
     public Routing(String destinationAddress, String destinationAddressNetMask, String hopAdress, int hopPort) {
         this.destinationAddress = stringToIPv6(destinationAddress);
         this.hopAdress = stringToIPv6(hopAdress);
         this.hopPort = hopPort;
     }
     
+    /**
+     * 
+     * @param accounts
+     * @return
+     */
 	public static ArrayList<Routing> createRoutingTable(File accounts){
 		   ArrayList<Routing> routeTable = new ArrayList<Routing>();
 	        try {
@@ -37,21 +54,30 @@ public class Routing {
 	        return routeTable;
 	}
 
+//	/**
+//	 * 
+//	 * @param destination
+//	 * @return
+//	 */
+//    public int getMatchScore(Inet6Address destination) {
+//        String target = changeToBinary(destinationAddress);
+//        String compare = changeToBinary(destination);
+//        int cnt = 0;
+//        for(int i = 0; i < target.length() && i < compare.length(); i ++){
+//        	if(target.indexOf(i) == compare.indexOf(i)){
+//        		cnt = cnt +1;
+//        	}else{
+//        		break;
+//        	}
+//        }
+//    	return cnt;
+//    }
 
-    public int getMatchScore(Inet6Address destination) {
-        String target = changeToBinary(destinationAddress);
-        String compare = changeToBinary(destination);
-        int cnt = 0;
-        for(int i = 0; i < target.length() && i < compare.length(); i ++){
-        	if(target.indexOf(i) == compare.indexOf(i)){
-        		cnt = cnt +1;
-        	}else{
-        		break;
-        	}
-        }
-    	return cnt;
-    }
-
+    /**
+     * 
+     * @param address
+     * @return
+     */
     private Inet6Address stringToIPv6 (String address) {
         Inet6Address nextHopAddress = null;
         try {
@@ -62,23 +88,28 @@ public class Routing {
         return nextHopAddress;
     }
     
-    private String changeToBinary(Inet6Address ipv6ad) {
-    	char charArray[] = ipv6ad.getHostAddress().replace(":","").toCharArray();
-        String result = "";
-        for(int i = 0; i < charArray.length; i++) {
-            result += String.format("%4s", Integer.toBinaryString(charArray[i])).replace(" ", "0");
-        }
-        return result;
-    }
 
+
+    /**
+     * 
+     * @return
+     */
     public Inet6Address getDestinationAddress() {
         return destinationAddress;
     }
 
+    /**
+     * 
+     * @return
+     */
     public Inet6Address getHopAddress() {
         return hopAdress;
     }
 
+    /**
+     * 
+     * @return
+     */
     public int getHopPort() {
         return hopPort;
     }
